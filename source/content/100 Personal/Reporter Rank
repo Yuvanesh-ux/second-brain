@@ -1,0 +1,304 @@
+
+An active "leaderboard" of reporters in the US based on their how "truthful" and "biased" they are
+
+## **1. Data Collection & Ingestion**
+
+1. **Article Gathering**
+    
+    - **Objective**: Acquire a comprehensive set of articles authored by the target journalist.
+        
+    - **Approach**:
+        
+        - Web scraping or using news APIs (e.g., NewsAPI, GDELT, etc.) that can filter by author name.
+            
+        - Maintain a local index or database of these articles’ URLs, headlines, publication dates, and content.
+            
+    - **Challenges**:
+        
+        - Consistency in bylines (the journalist may appear under slightly different names).
+            
+        - Paywalls and limited API call allowances.
+            
+        - Rate-limiting constraints when scraping.
+            
+2. **Supplementary Data**
+    
+    - **Objective**: Gather relevant metadata to measure other metrics (e.g., fact-check archives, recognized awards, references from academic citations).
+        
+    - **Approach**:
+        
+        - Query known sources of fact-checks (e.g., PolitiFact, Snopes) – if they have an API or structured data.
+            
+        - Search for the journalist’s name alongside keywords like “award,” “citation,” or “references” to identify recognized credibility or references.
+            
+        - Maintain a separate database table or index for these references.
+            
+
+---
+
+## **2. Data Processing & Preparation**
+
+1. **Content Cleaning**
+    
+    - **Objective**: Standardize text from different publications.
+        
+    - **Approach**:
+        
+        - Strip HTML, remove boilerplate text (e.g., ads, repeated disclaimers).
+            
+        - Use NLP preprocessing steps (tokenization, removal of stopwords for certain tasks if needed, etc.).
+            
+    - **Challenges**:
+        
+        - Varying article formats and structuring.
+            
+        - Non-standard or partial content if the data is truncated.
+            
+2. **Article Attribution**
+    
+    - **Objective**: Verify that each article truly belongs to the target journalist.
+        
+    - **Approach**:
+        
+        - Check the byline or author metadata.
+            
+        - Implement a fuzzy matching approach to handle variations in the journalist’s name.
+            
+3. **Claim Extraction (Optional but can feed Truthfulness)**
+    
+    - **Objective**: Identify factual statements that might be checked.
+        
+    - **Approach**:
+        
+        - Use an NLP pipeline for “claim detection” or “information extraction.”
+            
+        - Each claim is then stored for potential verification or labeling (if external fact-checking resources exist).
+            
+
+---
+
+## **3. Metric Computation**
+
+### **A. Clickbait Score**
+
+1. **Headline Analysis**
+    
+    - **Method**:
+        
+        - Use a text classification model (trained or fine-tuned on clickbait vs. non-clickbait headlines).
+            
+        - Optionally, do a keyword frequency count for words like “shocking,” “you won’t believe,” etc.
+            
+    - **Output**: A clickbait score (0 to 1), or discrete classification (clickbait vs. not).
+        
+2. **Title-Article Alignment**
+    
+    - **Method**:
+        
+        - Use a semantic similarity model (e.g., BERT, SentenceTransformers) to compare the headline with the article’s summary.
+            
+        - Score how well the headline reflects the primary claims or topic.
+            
+    - **Output**: Numerical similarity score or a binary pass/fail.
+        
+
+### **B. Truthfulness**
+
+1. **Verified Facts** / **Misinformation Rate**
+    
+    - **Method**:
+        
+        - Identify claims from the articles.
+            
+        - Check them against fact-checking databases or run an LLM-based retrieval to see if these claims have been rated by reliable fact-check sources.
+            
+        - If no direct match is found, you could optionally rely on an LLM’s reasoning with a known knowledge base, but that’s riskier.
+            
+    - **Output**: Percentage of verified-true vs. verified-false statements.
+        
+
+### **C. Bias (via Sentiment Analysis)**
+
+1. **Sentiment Classification**
+    
+    - **Method**:
+        
+        - Build or fine-tune a multi-label (or multi-class) classification model that assesses political/ideological bias or general sentiment (positive/negative/neutral).
+            
+        - Aggregate across multiple articles to produce a profile.
+            
+    - **Output**: Scores indicating left/right or negative/positive stance, possibly aggregated at the topic level (e.g., how do they cover politics vs. healthcare?).
+        
+
+### **D. Breadth & Depth of Topics**
+
+1. **Distinct Topics Covered (Quantitative)**
+    
+    - **Method**:
+        
+        - Perform topic modeling (e.g., LDA or a neural approach like BERTopic) on the corpus.
+            
+        - Count the number of unique topic clusters.
+            
+    - **Output**: Integer or a set of topic labels.
+        
+2. **Topic Complexity & Contextual Completeness (Qualitative)**
+    
+    - **Method**:
+        
+        - Use an AI model or a set of heuristics to look for depth indicators (e.g., data references, historical context).
+            
+        - Possibly score how frequently the journalist includes multiple viewpoints, stats, or references.
+            
+    - **Output**: A short qualitative analysis or a rating based on presence/absence of key “depth indicators.”
+        
+
+### **E. Source Transparency**
+
+1. **Citation Rate**
+    
+    - **Method**:
+        
+        - For each article, parse for external links or named references.
+            
+        - Count or ratio of citations per 1,000 words.
+            
+    - **Output**: Numerical score or ratio indicating how heavily the journalist relies on explicit sourcing.
+        
+
+### **F. Expertise & Experience (Context Only)**
+
+1. **Years on the Beat**
+    
+    - **Method**:
+        
+        - Gather references to the journalist’s earliest published pieces.
+            
+        - Cross-check with LinkedIn or other public profiles (if permitted) to see how long they’ve been covering certain topics.
+            
+    - **Output**: A descriptive entry, e.g., “10+ years covering political journalism.”
+        
+2. **Recognized Credibility** / **Peer/Academic Citations**
+    
+    - **Method**:
+        
+        - Use search queries to find mentions of the journalist in awards lists.
+            
+        - Scrape academic citation databases (e.g., Google Scholar) for references to their articles.
+            
+    - **Output**: A textual or tabular summary (list of awards, number of academic citations, etc.).
+        
+
+### **G. Ethical Standards & Conflicts of Interest (Qualitative)**
+
+1. **Financial/Political Ties**
+    
+    - **Method**:
+        
+        - Automated web search for disclosures, controversies, or documented ties.
+            
+        - Possibly parse disclaimers in articles.
+            
+    - **Output**: Summaries or bullet points describing any relevant ties.
+        
+2. **Adherence to Ethics Codes**
+    
+    - **Method**:
+        
+        - Potentially a manual or AI-based review looking for major deviations from known ethical guidelines.
+            
+    - **Output**: A short descriptive rating or explanation.
+        
+
+---
+
+## **4. Engine Orchestration**
+
+1. **Workflow Design**
+    
+    - Use a pipeline or orchestration tool (e.g., Airflow, Luigi, or custom Python scripts) to run each stage in order.
+        
+    - Steps in the pipeline:
+        
+        1. **Scrape/Fetch** articles
+            
+        2. **Clean/Process** text
+            
+        3. **Run NLP modules** (e.g., claim extraction, sentiment analysis, topic modeling, clickbait classifier)
+            
+        4. **Aggregate Scores** and store in a database
+            
+        5. **Generate Final Profile** (JSON or structured format)
+            
+2. **Modular, Incremental Approach**
+    
+    - Implement each metric’s calculation as a separate microservice or function.
+        
+    - This modular approach lets you update or swap out specific AI models without breaking the entire pipeline.
+        
+
+---
+
+## **5. Data Storage & Access**
+
+1. **Database Schema**
+    
+    - **Article Table**: ID, author, publication, URL, raw text, date, etc.
+        
+    - **Metrics Table**: Article ID, clickbait_score, sentiment_score, verified_facts, etc.
+        
+    - **Journalist Table**: Journalist ID, name variations, aggregated metrics, context info (awards, years of experience).
+        
+    - **Fact-Check References**: Claim text, fact-check source, rating (true/false).
+        
+2. **APIs & Integration**
+    
+    - Expose an internal API to query these metrics for a particular journalist, or to run the pipeline on new data.
+
+    - Potentially allow partial updates if new articles or fact-check data appear.
+        
+
+---
+
+## **6. Continuous Improvement & Maintenance**
+
+1. **Model Updating**
+    
+    - As new data or improved classification techniques become available, regularly retrain or fine-tune your models for clickbait, sentiment, or claim detection.
+        
+2. **Fact-Check Data Refresh**
+    
+    - Fact-checking sites update regularly. Make sure your system re-checks or updates misinformation rates as new verifications appear.
+        
+3. **Quality Assurance**
+    
+    - Manually review a sample of articles and metric outputs to ensure accuracy.
+        
+    - Set up automated tests or alerts for anomalies (e.g., unusually high clickbait scores).
+        
+4. **Scalability**
+    
+    - Plan for how many journalists or articles you want to process. Large-scale might require distributed processing or cloud-based solutions.
+        
+
+---
+
+## **7. Final Output / Profile Generation**
+
+1. **Compiled Results**
+    
+    - Aggregate all metrics into a single “scoreboard” or profile for each journalist.
+        
+    - Provide short text summaries for qualitative aspects (like ethical disclosures or major awards).
+        
+2. **JSON or Database Output**
+    
+    - For front-end or user-facing apps, you can generate a structured JSON containing all the data.
+        
+    - This ensures the “engine” can be integrated into various front-ends or dashboards in the future.
+        
+3. **Optional Visualizations**
+    
+    - If needed, produce charts (e.g., bar charts for topic distribution, time-series of clickbait scores) for each journalist.
+        
+    - Keep them as an API endpoint or data feed for a future UI.
